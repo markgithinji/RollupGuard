@@ -77,3 +77,10 @@ data class FraudProof(
     val signature: String,                  // Signed by challenger
     val timestamp: Long
 )
+
+data class StateSummary(
+    val accounts: Int = 0,
+    val totalBalance: BigInteger = BigInteger.ZERO,
+    val latestStateRoot: String = "None",
+    val trackedBlocks: Int = 0
+)
