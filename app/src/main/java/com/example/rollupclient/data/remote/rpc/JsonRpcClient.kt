@@ -1,4 +1,4 @@
-package com.example.rollupclient
+package com.example.rollupclient.data.remote.rpc
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +51,7 @@ class JsonRpcClient(
 
             val request = Request.Builder()
                 .url(endpoint)
-                .post(RequestBody.create(jsonMediaType, requestBody))
+                .post(RequestBody.Companion.create(jsonMediaType, requestBody))
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json")
                 .build()

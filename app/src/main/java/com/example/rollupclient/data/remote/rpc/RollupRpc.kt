@@ -1,11 +1,9 @@
-package com.example.rollupclient
+package com.example.rollupclient.data.remote.rpc
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.math.BigInteger
-
 
 class RollupRpc(
     private val chain: RollupChain = RollupChain.OPTIMISM_SEPOLIA

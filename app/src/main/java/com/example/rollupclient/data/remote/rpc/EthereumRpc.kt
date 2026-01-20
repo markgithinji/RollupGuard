@@ -1,4 +1,4 @@
-package com.example.rollupclient
+package com.example.rollupclient.data.remote.rpc
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -41,7 +41,8 @@ class EthereumRpc(
      */
     suspend fun getBlockByNumber(blockNumber: String, fullTransactions: Boolean = false): Block {
         return withContext(Dispatchers.IO) {
-            val response = client.call("eth_getBlockByNumber", listOf(blockNumber, fullTransactions))
+            val response =
+                client.call("eth_getBlockByNumber", listOf(blockNumber, fullTransactions))
             val json = JSONObject(response)
 
             if (json.has("error")) {

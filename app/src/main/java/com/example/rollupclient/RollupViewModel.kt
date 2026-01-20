@@ -4,6 +4,8 @@ package com.example.rollupclient
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.rollupclient.data.remote.rpc.EthereumRpc
+import com.example.rollupclient.data.remote.rpc.RollupRpc
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

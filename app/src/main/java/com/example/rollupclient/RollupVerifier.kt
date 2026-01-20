@@ -4,6 +4,8 @@ package com.example.rollupclient
  * Simple rollup verification logic
  */
 import android.util.Log
+import com.example.rollupclient.data.remote.rpc.EthereumRpc
+import com.example.rollupclient.data.remote.rpc.RollupRpc
 import kotlinx.coroutines.delay
 import java.math.BigInteger
 import kotlin.math.abs

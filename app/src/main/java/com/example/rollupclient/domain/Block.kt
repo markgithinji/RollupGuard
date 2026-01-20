@@ -1,4 +1,4 @@
-package com.example.rollupclient
+package com.example.rollupclient.domain
 
 
 import java.math.BigInteger
