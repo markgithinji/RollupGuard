@@ -3,97 +3,53 @@ package com.example.rollupclient
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ChipDefaults
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.TrendingUp
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.Upcoming
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Speed
-import androidx.compose.material.icons.outlined.Storage
-import androidx.compose.material.icons.outlined.Sync
-import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.rollupclient.StatCard
-import kotlinx.coroutines.launch
-import java.math.BigInteger
+import com.example.rollupclient.domain.RollupVerifier
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RollupDashboard(
-    viewModel: RollupViewModel = viewModel()
-) {
+fun RollupDashboard() {
+    val viewModel: RollupViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsState()
-    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("🔗 Rollup Security Client") },
+                title = { Text("🔐 Rollup Client") },
                 actions = {
-                    IconButton(
-                        onClick = { viewModel.refreshAll() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Refresh,
-                            contentDescription = "Refresh"
-                        )
+                    IconButton(onClick = { viewModel.refreshNetworkStatus() }) {
+                        Icon(Icons.Filled.Refresh, "Refresh")
                     }
-                    IconButton(
-                        onClick = { /* TODO: Open settings */ }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Settings,
-                            contentDescription = "Settings"
-                        )
+                    IconButton(onClick = { /* Settings */ }) {
+                        Icon(Icons.Filled.Settings, "Settings")
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    scope.launch {
-                        viewModel.toggleMonitoring()
-                    }
-                },
+                onClick = { viewModel.toggleMonitoring() },
                 containerColor = if (uiState.isMonitoring) {
                     MaterialTheme.colorScheme.errorContainer
                 } else {
                     MaterialTheme.colorScheme.primaryContainer
-                },
-                contentColor = if (uiState.isMonitoring) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    MaterialTheme.colorScheme.onPrimaryContainer
                 }
             ) {
                 Icon(
-                    imageVector = if (uiState.isMonitoring) {
-                        Icons.Outlined.Pause
-                    } else {
-                        Icons.Outlined.PlayArrow
-                    },
-                    contentDescription = if (uiState.isMonitoring) "Stop Monitoring" else "Start Monitoring"
+                    if (uiState.isMonitoring) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                    if (uiState.isMonitoring) "Stop" else "Start"
                 )
             }
         }
@@ -106,49 +62,18 @@ fun RollupDashboard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Network Status Card
             NetworkStatusCard(uiState, viewModel)
-            StateTrieCard(uiState, viewModel)
-            BlockVerificationCard(uiState, viewModel)
-            RecentActivityCard(uiState)
-            StatsCard(uiState)
-        }
-    }
-}
 
-@Composable
-private fun StatCard(
-    label: String,
-    value: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleMedium
-                )
+            // State Summary Card
+            StateSummaryCard(uiState)
+
+            // Verification Stats Card
+            VerificationStatsCard(uiState)
+
+            // Last Verification Card
+            uiState.lastVerification?.let { verification ->
+                LastVerificationCard(verification)
             }
         }
     }
@@ -156,50 +81,39 @@ private fun StatCard(
 
 @Composable
 private fun NetworkStatusCard(
-    uiState: RollupUiState,
+    uiState: RollupUiState1,
     viewModel: RollupViewModel
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "🌐 Network Status",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text("🌐 Network Status", style = MaterialTheme.typography.titleMedium)
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                NetworkStatusItem(
+                StatusChip(
                     label = "Ethereum L1",
-                    block = uiState.l1BlockNumber,
                     status = uiState.l1Status,
-                    isSyncing = uiState.isL1Syncing,
-                    onClick = { viewModel.refreshL1() }
+                    block = uiState.l1BlockNumber?.toString() ?: "—",
+                    isHealthy = uiState.networkHealth.l1Healthy
                 )
 
-                NetworkStatusItem(
+                StatusChip(
                     label = "Rollup L2",
-                    block = uiState.l2BlockNumber,
                     status = uiState.l2Status,
-                    isSyncing = uiState.isL2Syncing,
-                    onClick = { viewModel.refreshL2() }
+                    block = uiState.l2BlockNumber?.toString() ?: "—",
+                    isHealthy = uiState.networkHealth.l2Healthy
                 )
             }
 
-            if (uiState.networkError != null) {
+            if (!uiState.networkHealth.allHealthy) {
                 AlertCard(
-                    title = "Network Error",
-                    message = uiState.networkError!!,
-                    type = AlertType.ERROR
+                    message = "Network issues detected",
+                    type = AlertType.WARNING
                 )
             }
         }
@@ -207,51 +121,26 @@ private fun NetworkStatusCard(
 }
 
 @Composable
-private fun NetworkStatusItem(
+private fun StatusChip(
     label: String,
-    block: BigInteger?,
     status: String,
-    isSyncing: Boolean,
-    onClick: () -> Unit
+    block: String,
+    isHealthy: Boolean
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelSmall)
         Spacer(modifier = Modifier.height(4.dp))
-
-        if (isSyncing) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp
-            )
-        } else {
-            Text(
-                text = block?.toString() ?: "—",
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-
+        Text(block, style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(4.dp))
-
-        AssistChip(
-            onClick = onClick,
+        FilterChip(
+            selected = isHealthy,
+            onClick = {},
             label = { Text(status) },
-            colors = AssistChipDefaults.assistChipColors(
-                containerColor = when (status) {
-                    "Connected" -> MaterialTheme.colorScheme.primaryContainer
-                    "Disconnected" -> MaterialTheme.colorScheme.errorContainer
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                },
-                labelColor = when (status) {
-                    "Connected" -> MaterialTheme.colorScheme.onPrimaryContainer
-                    "Disconnected" -> MaterialTheme.colorScheme.onErrorContainer
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+            colors = FilterChipDefaults.filterChipColors(
+                containerColor = if (isHealthy) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.errorContainer
                 }
             )
         )
@@ -259,91 +148,67 @@ private fun NetworkStatusItem(
 }
 
 @Composable
-private fun StateTrieCard(uiState: RollupUiState, viewModel: RollupViewModel) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
+private fun StateSummaryCard(uiState: RollupUiState1) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "🌳 State Trie",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                AssistChip(
-                    onClick = { /* TODO: Show state details */ },
-                    label = { Text("Details") }
-                )
+                Icon(Icons.Filled.Storage, contentDescription = null)
+                Text("📊 State Summary", style = MaterialTheme.typography.titleMedium)
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                StatItem(
-                    label = "Accounts",
-                    value = uiState.stateTrieAccounts.toString()
-                )
-                StatItem(
-                    label = "Root Hash",
-                    value = uiState.stateRoot?.take(12) ?: "0x..."
-                )
-                StatItem(
-                    label = "Size",
-                    value = "${uiState.stateTrieSize} KB"
-                )
-            }
+            val summary = uiState.stateSummary
 
-            if (uiState.stateSyncProgress > 0f) {
-                LinearProgressIndicator(
-                    progress = uiState.stateSyncProgress,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Text(
-                    text = "Syncing state: ${(uiState.stateSyncProgress * 100).toInt()}%",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            } else if (!uiState.isStateSyncing) {
-                Button(
-                    onClick = { viewModel.startStateSync() },
-                    modifier = Modifier.fillMaxWidth()
+            // Check if we have any state data (trackedBlocks > 0)
+            if (summary.trackedBlocks > 0) {
+                // Display the state summary properties
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Start State Sync")
+                    Text("Accounts", style = MaterialTheme.typography.bodyMedium)
+                    Text(summary.accounts.toString(), style = MaterialTheme.typography.bodyMedium)
                 }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Total Balance", style = MaterialTheme.typography.bodyMedium)
+                    Text("${summary.totalBalance} wei", style = MaterialTheme.typography.bodyMedium)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Tracked Blocks", style = MaterialTheme.typography.bodyMedium)
+                    Text(summary.trackedBlocks.toString(), style = MaterialTheme.typography.bodyMedium)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Latest State Root", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        summary.latestStateRoot.take(12) + "...",
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            } else {
+                Text("No state data yet", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleSmall
-        )
-    }
-}
-
-@Composable
-private fun BlockVerificationCard(uiState: RollupUiState, viewModel: RollupViewModel) {
-    val scope = rememberCoroutineScope()
-
+private fun VerificationStatsCard(uiState: RollupUiState1) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -354,60 +219,49 @@ private fun BlockVerificationCard(uiState: RollupUiState, viewModel: RollupViewM
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "🔍 Block Verification",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            Text("🔍 Verification Stats", style = MaterialTheme.typography.titleMedium)
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                VerificationStat(
-                    label = "Verified",
-                    value = uiState.verifiedBlocks,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                VerificationStat(
-                    label = "Pending",
-                    value = uiState.pendingBlocks,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                VerificationStat(
-                    label = "Failed",
-                    value = uiState.failedBlocks,
-                    color = MaterialTheme.colorScheme.error
-                )
+                StatItem("Verified", uiState.verifiedBlocks.toString())
+                StatItem("Failed", uiState.failedBlocks.toString())
+                StatItem("Success", "${uiState.successRate}%")
             }
 
-            if (uiState.lastVerification != null) {
-                AlertCard(
-                    title = "Last Verification",
-                    message = uiState.lastVerification!!,
-                    type = if (uiState.lastVerificationValid == true) AlertType.SUCCESS else AlertType.ERROR
+            if (uiState.pendingBlocks > 0) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Text(
+                    "${uiState.pendingBlocks} blocks pending",
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
+        }
+    }
+}
 
-            Button(
-                onClick = {
-                    scope.launch {
-                        viewModel.verifyLatestBlock()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !uiState.isVerifying && uiState.l2BlockNumber != null
-            ) {
-                if (uiState.isVerifying) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Verifying...")
-                } else {
-                    Text("Verify Latest Block")
+@Composable
+private fun LastVerificationCard(
+    verification: RollupVerifier.VerificationResult
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("📝 Last Verification", style = MaterialTheme.typography.titleMedium)
+
+            Text("Block: #${verification.rollupBlock}")
+            Text("Valid: ${if (verification.isValid) "✅" else "❌"}")
+            Text("Time: ${verification.verificationTimeMs}ms")
+            Text("Txs: ${verification.transactionsCount}")
+
+            if (verification.errors.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Notes:", style = MaterialTheme.typography.labelMedium)
+                verification.errors.forEach { error ->
+                    Text("• $error", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -415,204 +269,28 @@ private fun BlockVerificationCard(uiState: RollupUiState, viewModel: RollupViewM
 }
 
 @Composable
-private fun VerificationStat(label: String, value: Int, color: Color) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value.toString(),
-            style = MaterialTheme.typography.headlineSmall,
-            color = color
-        )
+private fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelSmall)
+        Text(value, style = MaterialTheme.typography.titleMedium)
     }
 }
 
 @Composable
-private fun AlertCard(title: String, message: String, type: AlertType) {
+private fun AlertCard(message: String, type: AlertType) {
     val backgroundColor = when (type) {
-        AlertType.SUCCESS -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-        AlertType.ERROR -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-        AlertType.WARNING -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f)
-        AlertType.INFO -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-    }
-
-    val textColor = when (type) {
-        AlertType.SUCCESS -> MaterialTheme.colorScheme.onPrimaryContainer
-        AlertType.ERROR -> MaterialTheme.colorScheme.onErrorContainer
-        AlertType.WARNING -> MaterialTheme.colorScheme.onSecondaryContainer
-        AlertType.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
+        AlertType.WARNING -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+        else -> MaterialTheme.colorScheme.surfaceVariant
     }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = textColor
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = textColor
-            )
-        }
-    }
-}
-
-@Composable
-private fun RecentActivityCard(uiState: RollupUiState) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "📊 Recent Activity",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (uiState.recentActivity.isEmpty()) {
-                Text(
-                    text = "No recent activity",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                uiState.recentActivity.take(5).forEach { activity ->
-                    ActivityRow(activity)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (uiState.recentActivity.isNotEmpty()) {
-                TextButton(
-                    onClick = { /* TODO: Show all activity */ },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("View All (${uiState.recentActivity.size})")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActivityRow(activity: ActivityLog) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = when (activity.type) {
-                ActivityType.VERIFICATION -> Icons.Outlined.CheckCircle
-                ActivityType.SYNC -> Icons.Outlined.Sync
-                ActivityType.ERROR -> Icons.Outlined.Error
-                ActivityType.INFO -> Icons.Outlined.Info
-            },
-            contentDescription = null,
-            tint = when (activity.type) {
-                ActivityType.VERIFICATION -> MaterialTheme.colorScheme.primary
-                ActivityType.SYNC -> MaterialTheme.colorScheme.secondary
-                ActivityType.ERROR -> MaterialTheme.colorScheme.error
-                ActivityType.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
-            }
+        Text(
+            text = "⚠️ $message",
+            modifier = Modifier.padding(12.dp),
+            style = MaterialTheme.typography.bodySmall
         )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = activity.message,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = formatTimeAgo(activity.timestamp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatsCard(uiState: RollupUiState) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "📈 Statistics",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Simple grid layout
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Row 1
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatCard(
-                        label = "Uptime",
-                        value = formatDuration(uiState.uptime),
-                        icon = Icons.Default.Schedule,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = "Data",
-                        value = "${uiState.dataProcessedMB} MB",
-                        icon = Icons.Default.Storage,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                // Row 2
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatCard(
-                        label = "Avg Time",
-                        value = "${uiState.avgVerificationTimeMs} ms",
-                        icon = Icons.Default.Speed,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = "Success Rate",
-                        value = "${uiState.successRate}%",
-                        icon = Icons.Default.Upcoming,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
     }
 }
