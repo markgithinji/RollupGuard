@@ -14,11 +14,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        Log.d(TAG, "🚀 App starting...")
+        Log.d(TAG, "App starting...")
 
         setContent {
             MaterialTheme {
-                RollupDashboard()
+                RollupApp()
             }
         }
     }
