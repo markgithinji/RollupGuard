@@ -32,7 +32,7 @@ class RollupVerifier {
         val errors = mutableListOf<String>()
 
         try {
-            Log.i(TAG, "🔍 Verification for block #$rollupBlockNumber")
+            Log.i(TAG, "Verification for block #$rollupBlockNumber")
 
             // 1. Get rollup block
             val rollupBlock = repository.getL2Block(rollupBlockNumber)
@@ -76,7 +76,7 @@ class RollupVerifier {
                         errors.add("Large timestamp diff: ${timeDiffLong}s (testnet normal)")
                     }
 
-                    Log.i(TAG, "✅ L1 block #$l1Block verified exists")
+                    Log.i(TAG, "L1 block #$l1Block verified exists")
                 } catch (e: Exception) {
                     errors.add("Failed to verify L1 block: ${e.message}")
                     Log.e(TAG, "L1 verification failed: ${e.message}")
@@ -86,7 +86,7 @@ class RollupVerifier {
             // 6. Check block finality
             val isFinalized = repository.isL2BlockFinalized(rollupBlockNumber)
             if (!isFinalized) {
-                Log.i(TAG, "⚠️ Block not yet finalized (${rollupBlockNumber})")
+                Log.i(TAG, "Block not yet finalized (${rollupBlockNumber})")
             }
 
             val totalTime = System.currentTimeMillis() - startTime
@@ -114,7 +114,7 @@ class RollupVerifier {
 
         } catch (e: Exception) {
             val totalTime = System.currentTimeMillis() - startTime
-            Log.e(TAG, "❌ verification failed: ${e.message}")
+            Log.e(TAG, "verification failed: ${e.message}")
 
             return VerificationResult(
                 rollupBlock = rollupBlockNumber,
@@ -136,7 +136,7 @@ class RollupVerifier {
         startBlock: BigInteger,
         endBlock: BigInteger
     ): List<VerificationResult> {
-        Log.i(TAG, "📦 Batch verification from #$startBlock to #$endBlock")
+        Log.i(TAG, "Batch verification from #$startBlock to #$endBlock")
         val results = mutableListOf<VerificationResult>()
 
         var currentBlock = startBlock
@@ -145,7 +145,7 @@ class RollupVerifier {
             results.add(result)
 
             if (!result.isValid) {
-                Log.w(TAG, "❌ Block #$currentBlock failed, stopping batch")
+                Log.w(TAG, "Block #$currentBlock failed, stopping batch")
                 break
             }
 

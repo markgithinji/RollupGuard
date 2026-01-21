@@ -43,10 +43,10 @@ class JsonRpcClient(
             }
             """.trimIndent()
 
-            Log.i(TAG, "📡 [Req#$requestId] $method → ${endpoint.take(40)}...")
+            Log.i(TAG, "[Req#$requestId] $method → ${endpoint.take(40)}...")
 
             if (params.isNotEmpty()) {
-                Log.d(TAG, "   📝 Params: ${params.take(2)}${if (params.size > 2) "..." else ""}")
+                Log.d(TAG, "Params: ${params.take(2)}${if (params.size > 2) "..." else ""}")
             }
 
             val request = Request.Builder()
@@ -66,9 +66,9 @@ class JsonRpcClient(
                     val errorBody = response.body?.string() ?: "No error body"
                     Log.e(
                         TAG,
-                        "❌ [${duration}ms] $method failed: ${response.code} ${response.message}"
+                        "[${duration}ms] $method failed: ${response.code} ${response.message}"
                     )
-                    Log.e(TAG, "   💥 Error: $errorBody")
+                    Log.e(TAG, "Error: $errorBody")
                     throw RuntimeException("RPC ${response.code}: ${response.message}")
                 }
 
@@ -81,7 +81,7 @@ class JsonRpcClient(
                     val error = json.getJSONObject("error")
                     Log.e(
                         TAG,
-                        "❌ [${duration}ms] $method error: ${error.getString("message")} (code: ${
+                        "[${duration}ms] $method error: ${error.getString("message")} (code: ${
                             error.optInt(
                                 "code",
                                 -1
@@ -97,7 +97,7 @@ class JsonRpcClient(
                 // Log based on method type
                 when (method) {
                     "eth_blockNumber" -> {
-                        Log.i(TAG, "✅ [${duration}ms] Latest block: $resultStr")
+                        Log.i(TAG, "[${duration}ms] Latest block: $resultStr")
                     }
 
                     "eth_getBlockByNumber" -> {
@@ -106,7 +106,7 @@ class JsonRpcClient(
                             val txCount = result.optJSONArray("transactions")?.length() ?: 0
                             Log.i(
                                 TAG,
-                                "✅ [${duration}ms] Block $blockNumber: ${txCount} txs, hash: ${
+                                "[${duration}ms] Block $blockNumber: ${txCount} txs, hash: ${
                                     result.optString(
                                         "hash",
                                         ""
@@ -119,7 +119,7 @@ class JsonRpcClient(
                     else -> {
                         Log.i(
                             TAG,
-                            "✅ [${duration}ms] $method → ${resultStr.take(80)}${if (resultStr.length > 80) "..." else ""}"
+                            "[${duration}ms] $method → ${resultStr.take(80)}${if (resultStr.length > 80) "..." else ""}"
                         )
                     }
                 }
@@ -129,7 +129,7 @@ class JsonRpcClient(
                 val duration = System.currentTimeMillis() - startTime
                 Log.e(
                     TAG,
-                    "🔥 [${duration}ms] $method exception: ${e.javaClass.simpleName} - ${e.message}"
+                    "[${duration}ms] $method exception: ${e.javaClass.simpleName} - ${e.message}"
                 )
                 throw e
             }
@@ -141,17 +141,17 @@ class JsonRpcClient(
         return try {
             val cleanHex = hex.removePrefix("0x").ifEmpty { "0" }
             val result = BigInteger(cleanHex, 16)
-            Log.v(TAG, "🔢 Hex '$hex' → $result")
+            Log.v(TAG, "Hex '$hex' → $result")
             result
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to parse hex: '$hex' - ${e.message}")
+            Log.e(TAG, "Failed to parse hex: '$hex' - ${e.message}")
             BigInteger.ZERO
         }
     }
 
     fun bigIntToHex(value: BigInteger): String {
         val result = "0x${value.toString(16).lowercase()}"
-        Log.v(TAG, "🔢 $value → hex '$result'")
+        Log.v(TAG, "$value → hex '$result'")
         return result
     }
 }
