@@ -1,10 +1,13 @@
 package com.example.rollupclient
 
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rollupclient.data.repository.RollupRepository
+import com.example.rollupclient.domain.AccountState
 import com.example.rollupclient.domain.RollupVerifier
+import com.example.rollupclient.domain.StateManager
 import com.example.rollupclient.domain.StateSummary
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -17,6 +20,11 @@ import java.math.BigInteger
 
 
 class RollupViewModel : ViewModel() {
+
+    companion object {
+        private const val TAG = "Verifier"
+    }
+
     private val repository = RollupRepository()
     private val verifier = RollupVerifier()
 
@@ -25,6 +33,8 @@ class RollupViewModel : ViewModel() {
 
     private var monitoringJob: Job? = null
     private val appStartTime = System.currentTimeMillis()
+
+    private val stateManager = StateManager()
 
     init {
         refreshNetworkStatus()
@@ -41,6 +51,53 @@ class RollupViewModel : ViewModel() {
             l2Job.join()
 
             _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    fun addTestAccount() {
+        viewModelScope.launch {
+            try {
+                Log.i(TAG, "Adding test account...")
+
+                // Generate a test Ethereum address (40 hex chars after 0x)
+                val testAddress =
+                    "0x" + "f".repeat(40) // Example: 0xffffffffffffffffffffffffffffffffffffffff
+
+                // Create test account with 1 ETH balance
+                val testAccount = AccountState(
+                    nonce = BigInteger.ONE,
+                    balance = BigInteger("1000000000000000000"), // 1 ETH in wei
+                    storageRoot = AccountState.EMPTY_STORAGE_ROOT,
+                    codeHash = AccountState.EMPTY_CODE_HASH
+                )
+
+                // Update the state manager
+                stateManager.updateAccount(testAddress, testAccount)
+
+                // Get updated state summary
+                val newStateSummary = StateSummary(
+                    accounts = stateManager.getAccountCount(),
+                    totalBalance = stateManager.getTotalBalance(),
+                    latestStateRoot = stateManager.getLatestStateRoot() ?: "None",
+                    trackedBlocks = stateManager.getStateRootsCount()
+                )
+
+                // Update UI state
+                _uiState.update { current ->
+                    current.copy(
+                        stateSummary = newStateSummary
+                    )
+                }
+
+                Log.i(TAG, "Added test account: $testAddress")
+                Log.i(
+                    TAG,
+                    "New state: ${newStateSummary.accounts} accounts, root: ${newStateSummary.latestStateRoot}"
+                )
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to add test account: ${e.message}")
+            }
         }
     }
 
@@ -123,8 +180,10 @@ class RollupViewModel : ViewModel() {
 
                             // Update stats
                             _uiState.update { current ->
-                                val verified = if (result.isValid) current.verifiedBlocks + 1 else current.verifiedBlocks
-                                val failed = if (!result.isValid) current.failedBlocks + 1 else current.failedBlocks
+                                val verified =
+                                    if (result.isValid) current.verifiedBlocks + 1 else current.verifiedBlocks
+                                val failed =
+                                    if (!result.isValid) current.failedBlocks + 1 else current.failedBlocks
                                 val total = verified + failed
 
                                 current.copy(
@@ -181,6 +240,49 @@ class RollupViewModel : ViewModel() {
         } catch (e: Exception) {
             _uiState.update { it.copy(isVerifying = false) }
         }
+    }
+
+//    // Add method to sync account state from block
+//    private suspend fun syncAccountStateFromBlock(blockNumber: BigInteger) {
+//        try {
+//            val rpc = RollupRpc()
+//            val block = rpc.getBlockByNumber(rpc.bigIntToHex(blockNumber))
+//
+//            // For each transaction in block, update account states
+//            // This is simplified - in reality you'd parse transaction effects
+//            block.transactions.forEach { txHash ->
+//                // TODO: Get transaction receipt and parse state changes
+//                // For now, just update state root
+//            }
+//
+//            // Save state root for this block
+//            stateManager.saveStateRoot(blockNumber, block.stateRoot)
+//
+//            // Update UI state
+//            _uiState.update { current ->
+//                current.copy(
+//                    stateSummary = stateManager.getStateSummary(),
+//                    recentActivity = current.recentActivity + ActivityLog(
+//                        type = ActivityType.SYNC,
+//                        message = "Synced state root for block #$blockNumber",
+//                        timestamp = System.currentTimeMillis()
+//                    )
+//                )
+//            }
+//
+//        } catch (e: Exception) {
+//            Log.e(TAG, "Failed to sync account state: ${e.message}")
+//        }
+//    }
+
+    // Helper to get StateSummary from StateManager
+    private fun StateManager.getStateSummary(): StateSummary {
+        return StateSummary(
+            accounts = this.getAccountCount(),
+            totalBalance = this.getTotalBalance(),
+            latestStateRoot = this.getLatestStateRoot() ?: "None",
+            trackedBlocks = this.getStateRootsCount()
+        )
     }
 }
 
